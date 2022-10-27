@@ -81,9 +81,8 @@ class NeRFSystem(LightningModule):
                   'img_wh': tuple(self.hparams.img_wh)}
         if self.hparams.dataset_name == 'llff':
             kwargs['spheric_poses'] = self.hparams.spheric_poses
-            kwargs['val_num'] = self.hparams.num_gpus
+            kwargs['val_num'] = 0
         self.train_dataset = dataset(split='train', **kwargs)
-        self.val_dataset = dataset(split='val', **kwargs)
 
     def configure_optimizers(self):
         self.optimizer = get_optimizer(self.hparams, self.models)
@@ -95,13 +94,6 @@ class NeRFSystem(LightningModule):
                           shuffle=True,
                           num_workers=4,
                           batch_size=self.hparams.batch_size,
-                          pin_memory=True)
-
-    def val_dataloader(self):
-        return DataLoader(self.val_dataset,
-                          shuffle=False,
-                          num_workers=4,
-                          batch_size=1, # validate one image (H*W rays) at a time
                           pin_memory=True)
     
     def training_step(self, batch, batch_nb):
@@ -119,43 +111,40 @@ class NeRFSystem(LightningModule):
 
         return loss
 
-    def validation_step(self, batch, batch_nb):
-        rays, rgbs = batch['rays'], batch['rgbs']
-        rays = rays.squeeze() # (H*W, 3)
-        rgbs = rgbs.squeeze() # (H*W, 3)
-        results = self(rays)
-        log = {'val_loss': self.loss(results, rgbs)}
-        typ = 'fine' if 'rgb_fine' in results else 'coarse'
+    # def validation_step(self, batch, batch_nb):
+    #     rays, rgbs = batch['rays'], batch['rgbs']
+    #     rays = rays.squeeze() # (H*W, 3)
+    #     rgbs = rgbs.squeeze() # (H*W, 3)
+    #     results = self(rays)
+    #     log = {'val_loss': self.loss(results, rgbs)}
+    #     typ = 'fine' if 'rgb_fine' in results else 'coarse'
     
-        if batch_nb == 0:
-            W, H = self.hparams.img_wh
-            img = results[f'rgb_{typ}'].view(H, W, 3).permute(2, 0, 1).cpu() # (3, H, W)
-            img_gt = rgbs.view(H, W, 3).permute(2, 0, 1).cpu() # (3, H, W)
-            depth = visualize_depth(results[f'depth_{typ}'].view(H, W)) # (3, H, W)
-            stack = torch.stack([img_gt, img, depth]) # (3, 3, H, W)
-            self.logger.experiment.add_images('val/GT_pred_depth',
-                                               stack, self.global_step)
+    #     if batch_nb == 0:
+    #         W, H = self.hparams.img_wh
+    #         img = results[f'rgb_{typ}'].view(H, W, 3).permute(2, 0, 1).cpu() # (3, H, W)
+    #         img_gt = rgbs.view(H, W, 3).permute(2, 0, 1).cpu() # (3, H, W)
+    #         depth = visualize_depth(results[f'depth_{typ}'].view(H, W)) # (3, H, W)
+    #         stack = torch.stack([img_gt, img, depth]) # (3, 3, H, W)
+    #         self.logger.experiment.add_images('val/GT_pred_depth',
+    #                                            stack, self.global_step)
 
-        psnr_ = psnr(results[f'rgb_{typ}'], rgbs)
-        log['val_psnr'] = psnr_
+    #     psnr_ = psnr(results[f'rgb_{typ}'], rgbs)
+    #     log['val_psnr'] = psnr_
 
-        return log
+    #     return log
 
-    def validation_epoch_end(self, outputs):
-        mean_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        mean_psnr = torch.stack([x['val_psnr'] for x in outputs]).mean()
+    # def validation_epoch_end(self, outputs):
+    #     mean_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+    #     mean_psnr = torch.stack([x['val_psnr'] for x in outputs]).mean()
 
-        self.log('val/loss', mean_loss)
-        self.log('val/psnr', mean_psnr, prog_bar=True)
+    #     self.log('val/loss', mean_loss)
+    #     self.log('val/psnr', mean_psnr, prog_bar=True)
 
 
 def main(hparams):
     system = NeRFSystem(hparams)
     ckpt_cb = ModelCheckpoint(dirpath=f'ckpts/{hparams.exp_name}',
-                              filename='{epoch:d}',
-                              monitor='val/psnr',
-                              mode='max',
-                              save_top_k=5)
+                              filename='{epoch:d}')
     pbar = TQDMProgressBar(refresh_rate=1)
     callbacks = [ckpt_cb, pbar]
 
@@ -170,7 +159,7 @@ def main(hparams):
                       enable_model_summary=False,
                       accelerator='auto',
                       devices=hparams.num_gpus,
-                      num_sanity_val_steps=1,
+                      num_sanity_val_steps=0,
                       benchmark=True,
                       profiler="simple" if hparams.num_gpus==1 else None,
                       strategy=DDPPlugin(find_unused_parameters=False) if hparams.num_gpus>1 else None)

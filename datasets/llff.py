@@ -157,7 +157,7 @@ def create_spheric_poses(radius, n_poses=120):
 
 
 class LLFFDataset(Dataset):
-    def __init__(self, root_dir, split='train', img_wh=(504, 378), spheric_poses=False, val_num=1):
+    def __init__(self, root_dir, split='train', img_wh=(504, 378), spheric_poses=False, val_num=0):
         """
         spheric_poses: whether the images are taken in a spheric inward-facing manner
                        default: False (forward-facing)
@@ -167,7 +167,7 @@ class LLFFDataset(Dataset):
         self.split = split
         self.img_wh = img_wh
         self.spheric_poses = spheric_poses
-        self.val_num = max(1, val_num) # at least 1
+        self.val_num = 0
         self.define_transforms()
 
         self.read_meta()
@@ -199,8 +199,6 @@ class LLFFDataset(Dataset):
                 # (N_images, 3, 4) exclude H, W, focal
         self.poses, self.pose_avg = center_poses(poses)
         distances_from_center = np.linalg.norm(self.poses[..., 3], axis=1)
-        val_idx = np.argmin(distances_from_center) # choose val image as the closest to
-                                                   # center image
 
         # Step 3: correct scale so that the nearest depth is at a little more than 1.0
         # See https://github.com/bmild/nerf/issues/34
@@ -219,8 +217,6 @@ class LLFFDataset(Dataset):
             self.all_rays = []
             self.all_rgbs = []
             for i, image_path in enumerate(self.image_paths):
-                if i == val_idx: # exclude the val image
-                    continue
                 c2w = torch.FloatTensor(self.poses[i])
 
                 img = Image.open(image_path).convert('RGB')
@@ -251,10 +247,6 @@ class LLFFDataset(Dataset):
                                  
             self.all_rays = torch.cat(self.all_rays, 0) # ((N_images-1)*h*w, 8)
             self.all_rgbs = torch.cat(self.all_rgbs, 0) # ((N_images-1)*h*w, 3)
-        
-        elif self.split == 'val':
-            print('val image is', self.image_paths[val_idx])
-            self.val_idx = val_idx
 
         else: # for testing, create a parametric rendering path
             if self.split.endswith('train'): # test on training set
@@ -275,8 +267,6 @@ class LLFFDataset(Dataset):
     def __len__(self):
         if self.split == 'train':
             return len(self.all_rays)
-        if self.split == 'val':
-            return self.val_num
         if self.split == 'test_train':
             return len(self.poses)
         return len(self.poses_test)
@@ -287,9 +277,7 @@ class LLFFDataset(Dataset):
                       'rgbs': self.all_rgbs[idx]}
 
         else:
-            if self.split == 'val':
-                c2w = torch.FloatTensor(self.poses[self.val_idx])
-            elif self.split == 'test_train':
+            if self.split == 'test_train':
                 c2w = torch.FloatTensor(self.poses[idx])
             else:
                 c2w = torch.FloatTensor(self.poses_test[idx])
@@ -312,8 +300,6 @@ class LLFFDataset(Dataset):
                       'c2w': c2w}
 
             if self.split in ['val', 'test_train']:
-                if self.split == 'val':
-                    idx = self.val_idx
                 img = Image.open(self.image_paths[idx]).convert('RGB')
                 img = img.resize(self.img_wh, Image.LANCZOS)
                 img = self.transform(img) # (3, h, w)
