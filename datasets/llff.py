@@ -122,7 +122,7 @@ def create_spheric_poses(radius, n_poses=120):
 
 
 class LLFFDataset(Dataset):
-    def __init__(self, root_dir, split='train', img_wh=(504, 378), val_num=0, spheric_pose=False):
+    def __init__(self, root_dir, split='train', img_wh=(504, 378), val_num=0, spheric_poses=False):
         """
         spheric_poses: whether the images are taken in a spheric inward-facing manner
                        default: False (forward-facing)
@@ -139,8 +139,8 @@ class LLFFDataset(Dataset):
 
     def read_meta(self):
         poses_bounds = np.load(os.path.join(self.root_dir,
-                                            f'poses_bounds_{split}.npy')) # (N_images, 17)
-        self.image_paths = sorted(glob.glob(os.path.join(self.root_dir, f'images_{split}/*')))
+                                            f'poses_bounds_{self.split}.npy')) # (N_images, 17)
+        self.image_paths = sorted(glob.glob(os.path.join(self.root_dir, f'images_{self.split}/*')))
                         # load full resolution image then resize
         if self.split in ['train', 'val']:
             assert len(poses_bounds) == len(self.image_paths), \
