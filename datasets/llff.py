@@ -122,7 +122,7 @@ def create_spheric_poses(radius, n_poses=120):
 
 
 class LLFFDataset(Dataset):
-    def __init__(self, root_dir, split='train', img_wh=(504, 378), val_num=0):
+    def __init__(self, root_dir, split='train', img_wh=(504, 378), val_num=0, spheric_pose=False):
         """
         spheric_poses: whether the images are taken in a spheric inward-facing manner
                        default: False (forward-facing)
