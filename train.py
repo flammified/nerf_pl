@@ -144,7 +144,7 @@ class NeRFSystem(LightningModule):
 def main(hparams):
     system = NeRFSystem(hparams)
     ckpt_cb = ModelCheckpoint(dirpath=f'ckpts/{hparams.exp_name}',
-                              filename='{epoch:d}')
+                              filename='{epoch}')
     pbar = TQDMProgressBar(refresh_rate=1)
     callbacks = [ckpt_cb, pbar]
 
