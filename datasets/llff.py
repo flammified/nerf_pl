@@ -208,8 +208,8 @@ class LLFFDataset(Dataset):
         self.all_rays = torch.cat(self.all_rays, 0) # ((N_images-1)*h*w, 8)
         self.all_rgbs = torch.cat(self.all_rgbs, 0) # ((N_images-1)*h*w, 3)
 
-        print(f"SHAPE OF ALL_RAYS: {self.all_rays}")
-        print(f"SHAPE OF ALL_RGBS: {self.all_rays}")
+        print(f"SHAPE OF ALL_RAYS: {self.all_rays.shape}")
+        print(f"SHAPE OF ALL_RGBS: {self.all_rays.shape}")
                                  
 
     def define_transforms(self):
