@@ -140,9 +140,10 @@ class LLFFDataset(Dataset):
     def read_meta(self):
         poses_bounds = np.load(os.path.join(self.root_dir,
                                             f'poses_bounds_{self.split}.npy')) # (N_images, 17)
+        print(f"SHAPE OF POSES BOUNDS: {poses_bounds.shape}")
         self.image_paths = sorted(glob.glob(os.path.join(self.root_dir, f'images_{self.split}/*')))
                         # load full resolution image then resize
-        if self.split in ['train', 'val']:
+        if self.split in ['train', 'val', 'test']:
             assert len(poses_bounds) == len(self.image_paths), \
                 'Mismatch between number of images and number of poses! Please rerun COLMAP!'
 
@@ -151,6 +152,7 @@ class LLFFDataset(Dataset):
 
         # Step 1: rescale focal length according to training resolution
         H, W, self.focal = poses[0, :, -1] # original intrinsics, same for all images
+        print(f"H,W = {H}, {W}")
         # assert H*self.img_wh[0] == W*self.img_wh[1], \
         #     f'You must set @img_wh to have the same aspect ratio as ({W}, {H}) !'
         
@@ -205,6 +207,9 @@ class LLFFDataset(Dataset):
                                             1)] # (h*w, 8)
         self.all_rays = torch.cat(self.all_rays, 0) # ((N_images-1)*h*w, 8)
         self.all_rgbs = torch.cat(self.all_rgbs, 0) # ((N_images-1)*h*w, 3)
+
+        print(f"SHAPE OF ALL_RAYS: {self.all_rays}")
+        print(f"SHAPE OF ALL_RGBS: {self.all_rays}")
                                  
 
     def define_transforms(self):
