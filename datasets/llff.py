@@ -228,6 +228,7 @@ class LLFFDataset(Dataset):
                 'rays': self.all_rays[idx],
                 'rgbs': self.all_rgbs[idx]
             }
+            return sample
         else:
             c2w = torch.FloatTensor(self.poses[idx])
 
