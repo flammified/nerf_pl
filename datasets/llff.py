@@ -220,9 +220,36 @@ class LLFFDataset(Dataset):
         
 
     def __getitem__(self, idx):
-        sample = {
-            'rays': self.all_rays[idx],
-            'rgbs': self.all_rgbs[idx]
-        }
+        if self.split == "train":
+            sample = {
+                'rays': self.all_rays[idx],
+                'rgbs': self.all_rgbs[idx]
+            }
+        else:
+            c2w = torch.FloatTensor(self.poses[idx])
 
-        return sample
+            rays_o, rays_d = get_rays(self.directions, c2w)
+            if not self.spheric_poses:
+                near, far = 0, 1
+                rays_o, rays_d = get_ndc_rays(self.img_wh[1], self.img_wh[0],
+                                              self.focal, 1.0, rays_o, rays_d)
+            else:
+                near = self.bounds.min()
+                far = min(8 * near, self.bounds.max())
+
+            rays = torch.cat([rays_o, rays_d, 
+                              near*torch.ones_like(rays_o[:, :1]),
+                              far*torch.ones_like(rays_o[:, :1])],
+                              1) # (h*w, 8)
+
+            sample = {'rays': rays,
+                      'c2w': c2w}
+
+            if self.split in ['val', 'test_train']:
+                if self.split == 'val':
+                    idx = self.val_idx
+                img = Image.open(self.image_paths[idx]).convert('RGB')
+                img = img.resize(self.img_wh, Image.LANCZOS)
+                img = self.transform(img) # (3, h, w)
+                img = img.view(3, -1).permute(1, 0) # (h*w, 3)
+                sample['rgbs'] = img
