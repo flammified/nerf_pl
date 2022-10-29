@@ -254,3 +254,4 @@ class LLFFDataset(Dataset):
                 img = self.transform(img) # (3, h, w)
                 img = img.view(3, -1).permute(1, 0) # (h*w, 3)
                 sample['rgbs'] = img
+            return sample
