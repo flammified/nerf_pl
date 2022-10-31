@@ -24,6 +24,7 @@ class BlenderDataset(Dataset):
             self.meta = json.load(f)
 
         w, h = self.img_wh
+        print(w, h)
         self.focal = self.meta['frames'][0]['fl_x']
 
         # bounds, common for all scenes
