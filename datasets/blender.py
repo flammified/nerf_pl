@@ -45,7 +45,7 @@ class BlenderDataset(Dataset):
                 self.poses += [pose]
                 c2w = torch.FloatTensor(pose)
 
-                image_path = os.path.join(self.root_dir, f"{frame['file_path']}.png")
+                image_path = os.path.join(self.root_dir, f"{frame['file_path']}")
                 self.image_paths += [image_path]
                 img = Image.open(image_path)
                 img = img.resize(self.img_wh, Image.LANCZOS)
@@ -83,7 +83,7 @@ class BlenderDataset(Dataset):
             frame = self.meta['frames'][idx]
             c2w = torch.FloatTensor(frame['transform_matrix'])[:3, :4]
 
-            img = Image.open(os.path.join(self.root_dir, f"{frame['file_path']}.png"))
+            img = Image.open(os.path.join(self.root_dir, f"{frame['file_path']}"))
             img = img.resize(self.img_wh, Image.LANCZOS)
             img = self.transform(img) # (4, H, W)
             valid_mask = (img[-1]>0).flatten() # (H*W) valid color area
