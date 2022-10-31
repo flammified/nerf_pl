@@ -50,7 +50,7 @@ class BlenderDataset(Dataset):
                 img = Image.open(image_path)
                 img = img.resize(self.img_wh, Image.LANCZOS)
                 img = self.transform(img) # (4, h, w)
-                # img = img.view(4, -1).permute(1, 0) # (h*w, 4) RGBA
+                img = img.view(4, -1).permute(1, 0) # (h*w, 4) RGBA
                 # img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
                 self.all_rgbs += [img]
                 
@@ -70,6 +70,7 @@ class BlenderDataset(Dataset):
 
     def __len__(self):
         if self.split == 'train':
+            print(len(self.all_rays))
             return len(self.all_rays)
         if self.split == 'val':
             return 8 # only validate 8 images (to support <=8 gpus)
