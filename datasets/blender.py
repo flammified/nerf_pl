@@ -28,7 +28,7 @@ class BlenderDataset(Dataset):
 
         # bounds, common for all scenes
         self.near = 0
-        self.far = 10000
+        self.far = 1000
         self.bounds = np.array([self.near, self.far])
         
         # ray directions for all pixels, same for all images (same H, W, focal)
@@ -50,8 +50,8 @@ class BlenderDataset(Dataset):
                 img = Image.open(image_path)
                 img = img.resize(self.img_wh, Image.LANCZOS)
                 img = self.transform(img) # (4, h, w)
-                img = img.view(4, -1).permute(1, 0) # (h*w, 4) RGBA
-                img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
+                # img = img.view(4, -1).permute(1, 0) # (h*w, 4) RGBA
+                # img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
                 self.all_rgbs += [img]
                 
                 rays_o, rays_d = get_rays(self.directions, c2w) # both (h*w, 3)
@@ -63,6 +63,7 @@ class BlenderDataset(Dataset):
 
             self.all_rays = torch.cat(self.all_rays, 0) # (len(self.meta['frames])*h*w, 3)
             self.all_rgbs = torch.cat(self.all_rgbs, 0) # (len(self.meta['frames])*h*w, 3)
+            print(self.all_rays.shape, self.all_rgbs.shape)
 
     def define_transforms(self):
         self.transform = T.ToTensor()
