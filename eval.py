@@ -145,12 +145,12 @@ if __name__ == "__main__":
         imgs += [img_pred_]
         imageio.imwrite(os.path.join(dir_name, f'{i:03d}.png'), img_pred_)
 
-        if 'rgbs' in sample:
-            rgbs = sample['rgbs']
-            img_gt = rgbs.view(h, w, 3)
-            psnrs += [metrics.psnr(img_gt, img_pred).item()]
+        # if 'rgbs' in sample:
+        #     rgbs = sample['rgbs']
+        #     img_gt = rgbs.view(h, w, 3)
+        #     psnrs += [metrics.psnr(img_gt, img_pred).item()]
 
-    imageio.mimsave(os.path.join(dir_name, f'{args.scene_name}.gif'), imgs, fps=30)
+    # imageio.mimsave(os.path.join(dir_name, f'{args.scene_name}.gif'), imgs, fps=30)
 
     if args.save_depth:
         min_depth = np.min(depth_maps)
