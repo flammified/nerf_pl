@@ -12,7 +12,6 @@ class BlenderDataset(Dataset):
     def __init__(self, root_dir, split='train', img_wh=(800, 800)):
         self.root_dir = root_dir
         self.split = split
-        assert img_wh[0] == img_wh[1], 'image width must equal image height!'
         self.img_wh = img_wh
         self.define_transforms()
 
@@ -25,14 +24,11 @@ class BlenderDataset(Dataset):
             self.meta = json.load(f)
 
         w, h = self.img_wh
-        self.focal = 0.5*800/np.tan(0.5*self.meta['camera_angle_x']) # original focal length
-                                                                     # when W=800
-
-        self.focal *= self.img_wh[0]/800 # modify focal length to match size self.img_wh
+        self.focal = self.meta['frames'][0]['fl_x']
 
         # bounds, common for all scenes
-        self.near = 2.0
-        self.far = 6.0
+        self.near = 0
+        self.far = 10000
         self.bounds = np.array([self.near, self.far])
         
         # ray directions for all pixels, same for all images (same H, W, focal)
