@@ -52,7 +52,7 @@ class BlenderDataset(Dataset):
                 img = img.resize(self.img_wh, Image.LANCZOS)
                 img = self.transform(img) # (4, h, w)
                 print(img.shape)
-                img = img.view(4, -1).permute(1, 0) # (h*w, 4) RGBA
+                img = img.view(3, -1).permute(1, 0) # (h*w, 4) RGBA
                 print(img.shape)
                 # img = img[:, :3]*img[:, -1:] + (1-img[:, -1:]) # blend A to RGB
                 self.all_rgbs += [img]
